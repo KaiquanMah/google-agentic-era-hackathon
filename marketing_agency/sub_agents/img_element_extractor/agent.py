@@ -18,7 +18,8 @@ from google.adk import Agent
 
 from . import prompt
 
-MODEL = "gemini-1.5-pro-latest"
+MODEL = "gemini-2.5-pro"
+MODEL_IMAGE = "imagen-3.0-generate-002"
 
 img_element_extractor_agent = Agent(
     model=MODEL,
