@@ -41,11 +41,6 @@ Here's a step-by-step breakdown. For each step, explicitly call the designated s
     * **Action:** Call the `logo_create` subagent with the user-selected domain name.
     * **Expected Output:** The `logo_create` subagent should generate an image file representing a logo design.
 
-5.  **Extracting elements from an image (Tool: find_and_extract_elements)**
-    * **Input:** If a user uploads an image and asks to extract elements.
-    * **Action:** First, call the `load_artifacts` tool to get the name of the uploaded image. Then, call the `find_and_extract_elements` tool with the image name and a list of elements the user wants to find (e.g., "brand logo", "service description").
-    * **Expected Output:** The tool will return a list of filenames for the newly created image artifacts. Present this list to the user.
-
 Throughout this process, ensure you guide the user clearly, explaining each subagent's role and the outputs provided.
 
 ** When you use any subagent tool:

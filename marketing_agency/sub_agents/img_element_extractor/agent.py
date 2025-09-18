@@ -1,12 +1,17 @@
-
+import asyncio
 import io
 import json
 import os
 import re
 
-from google.adk.tools import ToolContext
+from google.adk import Agent
+from google.adk.tools import ToolContext, load_artifacts
 from google.genai import Client, types
 from PIL import Image
+
+from . import prompt
+
+MODEL = "gemini-2.5-pro"
 
 # Correctly initialize the client based on working examples
 client = Client(
@@ -14,6 +19,7 @@ client = Client(
     project=os.getenv("GOOGLE_CLOUD_PROJECT"),
     location=os.getenv("GOOGLE_CLOUD_LOCATION"),
 )
+
 
 async def find_and_extract_elements(
     image_artifact_name: str, elements_to_find: list[str], tool_context: "ToolContext"
@@ -34,7 +40,7 @@ async def find_and_extract_elements(
     # --- Part 0: Load the initial image artifact ---
     image_artifact = await tool_context.load_artifact(image_artifact_name)
     if not image_artifact:
-        return {"error": f"Artifact '{image_artifact_name}' not found.".replace('"', '\"')}
+        return {"error": f"Artifact '{image_artifact_name}' not found."}
 
     image_bytes = image_artifact.part.to_bytes()
     img = Image.open(io.BytesIO(image_bytes))
@@ -46,13 +52,13 @@ async def find_and_extract_elements(
     For each element, provide its name and its bounding box as a list of four integer coordinates [x1, y1, x2, y2].
     Return the output as a single JSON array where each object has a "label" and a "box_2d" key.
     """
-    response = client.models.generate_content([prompt, img], model="gemini-2.5-pro")
+    response = client.models.generate_content([prompt, img], model=MODEL)
 
     try:
         cleaned_text = re.sub(r"^```json\n?|\n?```$", "", response.text, flags=re.MULTILINE)
         found_elements = json.loads(cleaned_text)
     except (json.JSONDecodeError, IndexError):
-        return {"error": f"Failed to parse model response: {response.text}".replace('"', '\"')}
+        return {"error": f"Failed to parse model response: {response.text}"}
 
     # --- Part 2: Loop and extract each element ---
     extracted_files = []
@@ -81,3 +87,13 @@ async def find_and_extract_elements(
             continue
 
     return {"extracted_filenames": extracted_files}
+
+
+img_element_extractor_agent = Agent(
+    model=MODEL,
+    name="img_element_extractor_agent",
+    description="An agent that finds and extracts text or objects from an image based on user instructions.",
+    instruction=prompt.IMG_ELEMENT_EXTRACTOR_PROMPT,
+    output_key="img_element_extractor_output",
+    tools=[find_and_extract_elements, load_artifacts],
+)
