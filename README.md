@@ -367,7 +367,7 @@ The Marketing Agency platform is designed with inherent flexibility, allowing fo
   * crafting a professional website
   * creating an online marketing campaign
   * designing a memorable logo
-* To add
+* Added with bugs
   * Upload photos and edit it
   * Upload photos and extract elements
  
