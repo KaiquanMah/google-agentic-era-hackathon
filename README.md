@@ -384,6 +384,7 @@ The Marketing Agency platform is designed with inherent flexibility, allowing fo
 * Extra use cases for reference https://services.google.com/fh/files/events/use-cases-hackathon.pdf, https://cloud.google.com/transform/101-real-world-generative-ai-use-cases-from-industry-leaders?e=48754805
 * ADK Google Agent Development Kit https://github.com/google/adk-python?tab=readme-ov-file
 * Marketing agent starter code https://github.com/google/adk-samples/tree/main/python/agents/marketing-agency
+* 'Agent Starter Pack' https://github.com/GoogleCloudPlatform/agent-starter-pack?tab=readme-ov-file
 * Qwiklabs with instructions https://explore.qwiklabs.com/focuses/104187
 
 
