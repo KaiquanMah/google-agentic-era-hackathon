@@ -39,10 +39,7 @@ async def extract_image_region(
     Returns:
         A dictionary containing the status and the filename of the extracted image.
     """
-    artifacts = await tool_context.load_artifacts()
-    image_artifact = next(
-        (art for art in artifacts if art.name == image_artifact_name), None
-    )
+    image_artifact = await tool_context.load_artifact(image_artifact_name)
     if not image_artifact:
         return {"status": "error", "detail": f"Artifact '{image_artifact_name}' not found."}
 
