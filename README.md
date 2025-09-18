@@ -79,6 +79,13 @@ to implement this workflow.
 
 ## Running the Agent
 
+**Running agent in GCP cloud shell**
+* Go to the repo's directory
+* Run the make command below
+```bash
+make install && make playground
+```
+
 **Using `adk`**
 
 ADK provides convenient ways to bring up agents locally and interact with them.
