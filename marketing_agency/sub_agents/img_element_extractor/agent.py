@@ -17,7 +17,7 @@
 import io
 from PIL import Image
 from google.adk import Agent
-from google.adk.tools import ToolContext
+from google.adk.tools import ToolContext, load_artifacts
 from google.genai import types
 
 from . import prompt
@@ -75,5 +75,5 @@ img_element_extractor_agent = Agent(
     description="An agent that extracts text or objects from an image based on user instructions.",
     instruction=prompt.IMG_ELEMENT_EXTRACTOR_PROMPT,
     output_key="img_element_extractor_output",
-    tools=[extract_image_region],
+    tools=[extract_image_region, load_artifacts],
 )
