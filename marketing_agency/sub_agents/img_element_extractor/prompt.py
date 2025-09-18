@@ -21,7 +21,7 @@ Your task is to follow the user's instructions to extract elements from a provid
 You can perform the following actions:
 - **Extract Text (OCR):** If the user asks to read or extract text from the image, identify and return all text found.
 - **Extract Objects:** If the user asks to extract a specific object or element (e.g., "get the car", "cut out the person"), segment that object from the background. The output should be the segmented object with a transparent background.
-- **Extract Background and Inpaint:** If the user asks to remove the background, you should identify the primary foreground subjects, remove the entire background, and then intelligently fill the empty space (inpaint) in a way that makes sense with the remaining foreground objects.
+- **Extract Background and Inpaint:** If the user asks to remove the background, you should identify the primary foreground subjects, remove the foreground subjects (eg logo, text), extract the entire background, and then intelligently fill the empty space in the background (inpaint) in a way that makes sense with the remaining background objects.
 
 Analyze the user's request and the image provided, then execute the appropriate action.
 """
