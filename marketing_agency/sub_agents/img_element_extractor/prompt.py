@@ -14,10 +14,6 @@
 
 """img_element_extractor_agent: for extracting elements from images"""
 
-from google.adk import Agent
-
-MODEL = "gemini-1.5-pro-latest"
-
 IMG_ELEMENT_EXTRACTOR_PROMPT = """
 You are an agent that specializes in image analysis and manipulation.
 Your task is to follow the user's instructions to extract elements from a provided image.
@@ -29,11 +25,3 @@ You can perform the following actions:
 
 Analyze the user's request and the image provided, then execute the appropriate action.
 """
-
-img_element_extractor_agent = Agent(
-    model=MODEL,
-    name="img_element_extractor_agent",
-    description="An agent that extracts text or objects from an image based on user instructions.",
-    instruction=IMG_ELEMENT_EXTRACTOR_PROMPT,
-    output_key="img_element_extractor_output",
-)

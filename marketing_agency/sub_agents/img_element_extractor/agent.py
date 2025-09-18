@@ -14,4 +14,14 @@
 
 """img_element_extractor_agent: for extracting elements from images"""
 
-from .agent import img_element_extractor_agent
+from google.adk import Agent
+
+from . import prompt
+
+img_element_extractor_agent = Agent(
+    model=MODEL,
+    name="img_element_extractor_agent",
+    description="An agent that extracts text or objects from an image based on user instructions.",
+    instruction=prompt.IMG_ELEMENT_EXTRACTOR_PROMPT,
+    output_key="img_element_extractor_output",
+)
