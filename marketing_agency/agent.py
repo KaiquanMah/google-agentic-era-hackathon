@@ -42,7 +42,7 @@ marketing_coordinator = LlmAgent(
         AgentTool(agent=website_create_agent),
         AgentTool(agent=marketing_create_agent),
         AgentTool(agent=logo_create_agent),
-        AgentTool(agent=img_element_extractor_agent),
+        AgentTool(agent=img_element_extractor_agent, inherit_artifacts=True),
     ],
 )
 
