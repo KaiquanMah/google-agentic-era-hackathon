@@ -1,79 +1,99 @@
-# Copyright 2025 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-"""img_element_extractor_agent: for extracting elements from images"""
-
+import asyncio
 import io
-from PIL import Image
+import json
+import os
+import re
+
 from google.adk import Agent
 from google.adk.tools import ToolContext, load_artifacts
-from google.genai import types
+from google.genai import Client, types
+from PIL import Image
 
 from . import prompt
 
 MODEL = "gemini-2.5-pro"
-MODEL_IMAGE = "imagen-3.0-generate-002"
+
+# Correctly initialize the client based on working examples
+client = Client(
+    vertexai=True,
+    project=os.getenv("GOOGLE_CLOUD_PROJECT"),
+    location=os.getenv("GOOGLE_CLOUD_LOCATION"),
+)
 
 
-async def extract_image_region(
-    image_artifact_name: str, box_2d: list[int], tool_context: "ToolContext"
-) -> dict[str, str]:
-    """Extracts a region from an image based on a bounding box.
+async def find_and_extract_elements(
+    image_artifact_name: str, elements_to_find: list[str], tool_context: "ToolContext"
+) -> dict[str, list[str]]:
+    """Finds and extracts multiple elements from an image.
+
+    This tool first uses a multimodal model to find the bounding boxes of
+    requested elements, then crops and saves each element as a new artifact.
 
     Args:
-        image_artifact_name: The name of the image artifact to load.
-        box_2d: A list of 4 integers representing the bounding box [x1, y1, x2, y2].
+        image_artifact_name: The name of the image artifact to process.
+        elements_to_find: A list of strings describing the elements to find.
         tool_context: The context for the tool.
 
     Returns:
-        A dictionary containing the status and the filename of the extracted image.
+        A dictionary containing a list of the filenames of the extracted images.
     """
+    # --- Part 0: Load the initial image artifact ---
     image_artifact = await tool_context.load_artifact(image_artifact_name)
     if not image_artifact:
-        return {"status": "error", "detail": f"Artifact '{image_artifact_name}' not found."}
+        return {"error": f"Artifact '{image_artifact_name}' not found."}
 
     image_bytes = image_artifact.part.to_bytes()
-    image = Image.open(io.BytesIO(image_bytes))
+    img = Image.open(io.BytesIO(image_bytes))
 
-    # The box_2d coordinates are often normalized, but let's assume they are pixel values for now.
-    # The format is [x1, y1, x2, y2].
-    cropped_image = image.crop(box_2d)
+    # --- Part 1: Use the model to find bounding boxes ---
+    prompt = f"""Analyze the attached image. Identify the following elements: 
+    - {", ".join(elements_to_find)}
 
-    # Save the cropped image to a new artifact
-    output_buffer = io.BytesIO()
-    cropped_image.save(output_buffer, format="PNG")
-    output_bytes = output_buffer.getvalue()
+    For each element, provide its name and its bounding box as a list of four integer coordinates [x1, y1, x2, y2].
+    Return the output as a single JSON array where each object has a "label" and a "box_2d" key.
+    """
+    response = client.models.generate_content([prompt, img], model=MODEL)
 
-    new_artifact_name = f"extracted_{image_artifact_name}"
-    await tool_context.save_artifact(
-        new_artifact_name,
-        types.Part.from_bytes(data=output_bytes, mime_type="image/png"),
-    )
+    try:
+        cleaned_text = re.sub(r"^```json\n?|\n?```$", "", response.text, flags=re.MULTILINE)
+        found_elements = json.loads(cleaned_text)
+    except (json.JSONDecodeError, IndexError):
+        return {"error": f"Failed to parse model response: {response.text}"}
 
-    return {
-        "status": "success",
-        "detail": f"Extracted image saved as artifact '{new_artifact_name}'.",
-        "filename": new_artifact_name,
-    }
+    # --- Part 2: Loop and extract each element ---
+    extracted_files = []
+    for i, element in enumerate(found_elements):
+        label = element.get("label", f"element_{i}").replace(" ", "_").replace("'", "")
+        box = element.get("box_2d")
+        if not box or len(box) != 4:
+            continue
 
+        try:
+            box_ints = [int(c) for c in box]
+            cropped_image = img.crop(box_ints)
+            
+            output_buffer = io.BytesIO()
+            cropped_image.save(output_buffer, format="PNG")
+            output_bytes = output_buffer.getvalue()
+
+            new_artifact_name = f"extracted_{label}.png"
+            await tool_context.save_artifact(
+                new_artifact_name,
+                types.Part.from_bytes(data=output_bytes, mime_type="image/png"),
+            )
+            extracted_files.append(new_artifact_name)
+        except Exception:
+            # Ignore errors on individual crops
+            continue
+
+    return {"extracted_filenames": extracted_files}
 
 
 img_element_extractor_agent = Agent(
     model=MODEL,
     name="img_element_extractor_agent",
-    description="An agent that extracts text or objects from an image based on user instructions.",
+    description="An agent that finds and extracts text or objects from an image based on user instructions.",
     instruction=prompt.IMG_ELEMENT_EXTRACTOR_PROMPT,
     output_key="img_element_extractor_output",
-    tools=[extract_image_region, load_artifacts],
+    tools=[find_and_extract_elements, load_artifacts],
 )
